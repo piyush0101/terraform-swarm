@@ -47,45 +47,53 @@ resource "aws_subnet" "default" {
 resource "aws_instance" "swarm-master" {
   ami = "ami-a75354cd"
   instance_type = "t1.micro"
-  tags {
-     Name = "swarm-master"
-  }
   subnet_id = "${aws_subnet.default.id}"
   availability_zone = "us-east-1c"
   key_name = "${var.key_name}"
   vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
+
+  tags {
+     Name = "swarm-master"
+  }
+
+  connection {
+     user = "${var.user}"
+     private_key = "${var.key_path}"
+  }
+
   provisioner "remote-exec" {
     inline = [
       "sleep 30 && docker run -d -p 4000:4000 swarm manage -H :4000  --advertise ${aws_instance.swarm-master.private_ip}:4000 consul://${aws_instance.consul.private_ip}:8500"
     ]
-    connection {
-      user = "${var.user}"
-      private_key = "${var.key_path}"
-    }
   }
 }
 
 # Create swarm nodes
 resource "aws_instance" "swarm-node" {
-  count = 4
   ami = "ami-a75354cd"
   instance_type = "t1.micro"
-  tags {
-     Name = "swarm-node-${count.index}"
-  }
   subnet_id = "${aws_subnet.default.id}"
   availability_zone = "us-east-1c"
   key_name = "${var.key_name}"
   vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
+  count = "${var.nodes}"
+
+  tags {
+     Name = "swarm-node-${count.index}"
+  }
+  
+
+  connection {
+      user = "${var.user}"
+      private_key = "${var.key_path}"
+  }
+  
   provisioner "remote-exec" {
     inline = [
       "sleep 30 && docker run -d swarm join --advertise=${self.private_ip}:2375 consul://${aws_instance.consul.private_ip}:8500"
     ]
-    connection {
-      user = "${var.user}"
-      private_key = "${var.key_path}"
-    }
   }
+  
   depends_on = ["aws_instance.swarm-master"]
 }
 
@@ -93,20 +101,23 @@ resource "aws_instance" "swarm-node" {
 resource "aws_instance" "consul" {
   ami = "ami-a75354cd"
   instance_type = "t1.micro"
-  tags {
-     Name = "consul"
-  }
   subnet_id = "${aws_subnet.default.id}"
   availability_zone = "us-east-1c"
   key_name = "${var.key_name}"
   vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
+
+  tags {
+     Name = "consul"
+  }
+  
+  connection {
+      user = "${var.user}"
+      private_key = "${var.key_path}"
+  }
+    
   provisioner "remote-exec" {
     inline = [
       "sleep 30 && docker run -d -p 8500:8500 --name=consul progrium/consul -server -bootstrap"
     ]
-    connection {
-      user = "${var.user}"
-      private_key = "${var.key_path}"
-    }
   }
 }

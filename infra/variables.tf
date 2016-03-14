@@ -18,3 +18,8 @@ variable "key_name" {
 variable "key_path" {
   description = "Path to the private key specified by key_name"
 }
+
+variable "nodes" {
+  default = "3"
+  description = "Number of swarm nodes to launch"
+}
