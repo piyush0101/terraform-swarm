@@ -52,106 +52,38 @@ resource "aws_instance" "swarm-master" {
   }
   subnet_id = "${aws_subnet.default.id}"
   availability_zone = "us-east-1c"
-  key_name = "ami-creation"
+  key_name = "${var.key_name}"
   vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
   provisioner "remote-exec" {
     inline = [
       "sleep 30 && docker run -d -p 4000:4000 swarm manage -H :4000  --advertise ${aws_instance.swarm-master.private_ip}:4000 consul://${aws_instance.consul.private_ip}:8500"
     ]
     connection {
-      user = "ubuntu"
-      private_key = "~/.ssh/ami-creation.pem"
+      user = "${var.user}"
+      private_key = "${var.key_path}"
     }
   }
 }
 
-# Create swarm-node-1
-resource "aws_instance" "swarm-node-1" {
+# Create swarm nodes
+resource "aws_instance" "swarm-node" {
+  count = 4
   ami = "ami-a75354cd"
   instance_type = "t1.micro"
   tags {
-     Name = "swarm-node-1"
+     Name = "swarm-node-${count.index}"
   }
   subnet_id = "${aws_subnet.default.id}"
   availability_zone = "us-east-1c"
-  key_name = "ami-creation"
+  key_name = "${var.key_name}"
   vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
   provisioner "remote-exec" {
     inline = [
-      "sleep 30 && docker run -d swarm join --advertise=${aws_instance.swarm-node-1.private_ip}:2375 consul://${aws_instance.consul.private_ip}:8500"
+      "sleep 30 && docker run -d swarm join --advertise=${self.private_ip}:2375 consul://${aws_instance.consul.private_ip}:8500"
     ]
     connection {
-      user = "ubuntu"
-      private_key = "~/.ssh/ami-creation.pem"
-    }
-  }
-  depends_on = ["aws_instance.swarm-master"]
-}
-
-# Create swarm-node-2
-resource "aws_instance" "swarm-node-2" {
-  ami = "ami-a75354cd"
-  instance_type = "t1.micro"
-  tags {
-     Name = "swarm-node-2"
-  }
-  subnet_id = "${aws_subnet.default.id}"
-  availability_zone = "us-east-1c"
-  key_name = "ami-creation"
-  vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
-  provisioner "remote-exec" {
-    inline = [
-      "sleep 30 && docker run -d swarm join --advertise=${aws_instance.swarm-node-2.private_ip}:2375 consul://${aws_instance.consul.private_ip}:8500"
-    ]
-    connection {
-      user = "ubuntu"
-      private_key = "~/.ssh/ami-creation.pem"
-    }
-  }
-  depends_on = ["aws_instance.swarm-master"]
-}  
-
-# Create swarm-node-3
-resource "aws_instance" "swarm-node-3" {
-  ami = "ami-a75354cd"
-  instance_type = "t1.micro"
-  tags {
-     Name = "swarm-node-3"
-  }
-  subnet_id = "${aws_subnet.default.id}"
-  availability_zone = "us-east-1c"
-  key_name = "ami-creation"
-  vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
-  provisioner "remote-exec" {
-    inline = [
-      "sleep 30 && docker run -d swarm join --advertise=${aws_instance.swarm-node-3.private_ip}:2375 consul://${aws_instance.consul.private_ip}:8500"
-    ]
-    connection {
-      user = "ubuntu"
-      private_key = "~/.ssh/ami-creation.pem"
-    }
-  }
-  depends_on = ["aws_instance.swarm-master"]
-}
-
-# Create swarm-node-4
-resource "aws_instance" "swarm-node-4" {
-  ami = "ami-a75354cd"
-  instance_type = "t1.micro"
-  tags {
-     Name = "swarm-node-4"
-  }
-  subnet_id = "${aws_subnet.default.id}"
-  availability_zone = "us-east-1c"
-  key_name = "ami-creation"
-  vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
-  provisioner "remote-exec" {
-    inline = [
-      "sleep 30 && docker run -d swarm join --advertise=${aws_instance.swarm-node-4.private_ip}:2375 consul://${aws_instance.consul.private_ip}:8500"
-    ]
-    connection {
-      user = "ubuntu"
-      private_key = "~/.ssh/ami-creation.pem"
+      user = "${var.user}"
+      private_key = "${var.key_path}"
     }
   }
   depends_on = ["aws_instance.swarm-master"]
@@ -166,15 +98,15 @@ resource "aws_instance" "consul" {
   }
   subnet_id = "${aws_subnet.default.id}"
   availability_zone = "us-east-1c"
-  key_name = "ami-creation"
+  key_name = "${var.key_name}"
   vpc_security_group_ids = ["${aws_security_group.ssh.id}", "${aws_vpc.default.default_security_group_id}"]
   provisioner "remote-exec" {
     inline = [
       "sleep 30 && docker run -d -p 8500:8500 --name=consul progrium/consul -server -bootstrap"
     ]
     connection {
-      user = "ubuntu"
-      private_key = "~/.ssh/ami-creation.pem"
+      user = "${var.user}"
+      private_key = "${var.key_path}"
     }
   }
 }
