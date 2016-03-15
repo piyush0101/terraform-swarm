@@ -3,8 +3,13 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
-variable "access_key" {}
-variable "secret_key" {}
+variable "access_key" {
+  description = "AWS access key"
+}
+
+variable "secret_key" {
+  description = "AWS secret key"
+}
 
 variable "user" {
   default = "ubuntu"
