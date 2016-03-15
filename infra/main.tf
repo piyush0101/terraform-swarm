@@ -81,19 +81,18 @@ resource "aws_instance" "swarm-node" {
   tags {
      Name = "swarm-node-${count.index}"
   }
-  
 
   connection {
       user = "${var.user}"
       private_key = "${var.key_path}"
   }
-  
+
   provisioner "remote-exec" {
     inline = [
       "sleep 30 && docker run -d swarm join --advertise=${self.private_ip}:2375 consul://${aws_instance.consul.private_ip}:8500"
     ]
   }
-  
+
   depends_on = ["aws_instance.swarm-master"]
 }
 
@@ -109,12 +108,12 @@ resource "aws_instance" "consul" {
   tags {
      Name = "consul"
   }
-  
+
   connection {
       user = "${var.user}"
       private_key = "${var.key_path}"
   }
-    
+
   provisioner "remote-exec" {
     inline = [
       "sleep 30 && docker run -d -p 8500:8500 --name=consul progrium/consul -server -bootstrap"
